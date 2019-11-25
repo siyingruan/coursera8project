@@ -1,0 +1,107 @@
+---
+title: "Practical Machine Learning Final Project"
+author: "Siying R"
+date: "November 24, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Brief
+
+This is an anlysis using machine learning in R to classify the movement recorded by accelerometers on the belt, forearm, arm, and dumbell of 6 participants. It is an effort to quantify how well people exercise.
+
+The analysis will divide the training data into training and validation. Since it is a classification project, the analysis will fit 2 models (random forest and boosted tree) and stack them to get the better model after comparing the accuracy from the validation dataset. 
+
+Lastly, the analysis uses the best model to predict the class of the 20 observations in the test dataset. 
+
+The data used in the anlysis is from 
+Here is the training data for this project:
+<https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv>.
+
+Here is the test data:
+<https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv>
+
+For more details see <http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har>.  
+As a result, the combine predictors model has lower accuracy than the random forest model, where the boosted tree model has the lowest accuracy. This analysis uses the random forest model to predict the test dataset.
+## Load and Prepare the Data
+```{r prepare_env, include=FALSE}
+
+library(caret)
+library(dplyr)
+library(randomForest)
+```
+
+```{r load}
+#Make the data valid for train and prediction. 
+training<-read.csv("C:/Users/seein/Documents/R/Course8/pml-training.csv", na.strings = c("NA", "#DIV/0!", ""))
+
+testing<-read.csv("C:/Users/seein/Documents/R/Course8/pml-testing.csv",na.strings = c("NA", "#DIV/0!", ""))
+
+training<-training[,colSums(is.na(training))==0]
+testing<-testing[,colSums(is.na(testing))==0]
+
+# Review the variables to get only the related ones.
+names(training)
+
+#Explore the class
+table(training$classe)
+
+#Take only the data related to the prediction
+trainset<-training[,-c(1:7)]
+testset<-testing[,-c(1:7)]
+
+```
+## Build Cross Validation Set
+```{r Divide}
+#Divide the dataset into validation and train. 
+set.seed(123)
+inBuild<-createDataPartition(y=trainset$classe,p=0.7,list = FALSE)
+Validation<-trainset[-inBuild,]
+BuildData<-trainset[inBuild,]
+
+inTrain<-createDataPartition(y=BuildData$classe, p = 0.7, list=FALSE)
+traindata<-BuildData[inTrain,]
+testdata<-BuildData[-inTrain,]
+```
+
+##Build Model and Test Accuracy
+```{r Model, include = FALSE}
+#Build random forest and boosted tree models:
+mod_rf<-randomForest(classe~., data = traindata, method = "class")
+mod_gbm<-train(classe~., method = "gbm", data = traindata)
+```
+
+```{r Predit}
+#Predict the result with the validation data set:
+prd_rf<-predict(mod_rf,testdata)
+prd_gbm<-predict(mod_gbm,testdata)
+
+#See the accuracy of the prediction:
+confusionMatrix(prd_rf, testdata$classe)$overall[1]
+confusionMatrix(prd_gbm, testdata$classe)$overall[1]
+```
+Random Forest model has higher accuracy than Boosted Tree Model. 
+
+```{r combPredictor}
+#Combine the predictors to see whether there is a better accuracy.
+preDF<-data.frame(prd_rf,prd_gbm,classe=testdata$classe)
+comModfit<-randomForest(classe~., data = preDF, method = "class")
+comPred<-predict(comModfit,preDF)
+confusionMatrix(comPred,testdata$classe)$overall[1]
+
+#Use the validation set to see the prediction quality.
+prdV_rf<-predict(mod_rf,Validation)
+prdV_gbm<-predict(mod_gbm, Validation)
+prdVDF<-data.frame(prd_rf=prdV_rf, prd_gbm=prdV_gbm)
+comPrdV<-predict(comModfit, prdVDF)
+confusionMatrix(comPrdV,Validation$classe)$overall[1]
+```
+
+The result shows that the combine predictors model has less accuracy than the random forest model. Therefore, use the mod_rf to predict the 20 observations in the testset:
+## Predict the Test Cases
+```{r FinalPrediction, echo=FALSE}
+predict(mod_rf,testset)
+
+```
