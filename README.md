@@ -19,5 +19,6 @@ Here is the test data:
 For more details see <http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har>.  
 As a result, the combine predictors model has lower accuracy than the random forest model, where the boosted tree model has the lowest accuracy. This analysis uses the random forest model to predict the test dataset.
 
-##Here is the Link to see the HTML version:
+## Here is the Link to see the HTML version:
+
 <http://htmlpreview.github.io/?https://github.com/siyingruan/coursera8project/blob/master/preview-125438176e4.html>
