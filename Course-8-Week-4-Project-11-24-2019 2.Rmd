@@ -2,7 +2,7 @@
 title: "Practical Machine Learning Final Project"
 author: "Siying R"
 date: "November 24, 2019"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 ```{r setup, include=FALSE}
